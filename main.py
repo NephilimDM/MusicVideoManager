@@ -294,7 +294,9 @@ class ConcertManagerApp(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Music Video Manager v1.0")
-        self.setWindowIcon(QIcon("icon.ico"))
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        icon_path = os.path.join(script_dir, "icon.ico")
+        self.setWindowIcon(QIcon(icon_path))
         self.resize(1200, 800)
 
         # --- 1. SETUP CONTENITORE PRINCIPALE ---
