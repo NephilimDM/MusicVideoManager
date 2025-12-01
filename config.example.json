@@ -1,0 +1,11 @@
+{
+    "tmdb_key": "INSERT_KEY_HERE",
+    "fanart_key": "INSERT_KEY_HERE",
+    "discogs_key": "INSERT_KEY_HERE",
+    "discogs_secret": "INSERT_KEY_HERE",
+    "tadb_key": "2",
+    "setlistfm_key": "INSERT_KEY_HERE",
+    "last_root": "",
+    "setlist_key": "INSERT_KEY_HERE",
+    "language": "en"
+}
