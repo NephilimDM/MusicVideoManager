@@ -828,7 +828,7 @@ class ConcertManagerApp(QMainWindow):
         self.scraping_worker.progress_log.connect(
             lambda msg: print(f"LOG: {msg}"))  # Simple log for now
         self.scraping_worker.progress_value.connect(self.progress_bar.setValue)
-        self.scraping_worker.item_finished.connect(self.on_scraping_item_done)
+        self.scraping_worker.item_finished.connect(self.on_item_scraped)
         self.scraping_worker.finished.connect(self.on_scraping_finished)
 
         # UI State
