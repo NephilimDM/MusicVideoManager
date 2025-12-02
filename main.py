@@ -75,10 +75,6 @@ def setup_logging():
     logging.getLogger("PIL").setLevel(logging.WARNING)
     logging.getLogger("chardet").setLevel(logging.WARNING)
 
-    # Test immediato
-    logging.debug(
-        "--- SISTEMA DI LOGGING INIZIALIZZATO CON SUCCESSO (Livello DEBUG) ---")
-
 
 class ScanningWorker(QThread):
     """Worker thread for scanning directories in the background."""
@@ -95,11 +91,11 @@ class ScanningWorker(QThread):
 
     def run(self):
         """Execute the scanning logic."""
-        logger.debug(f"Inizio scansione cartella: {self.root_folder}")
+        logger.debug(f"Start scanning folder: {self.root_folder}")
         for root, dirs, files in os.walk(self.root_folder):
             # Rule 1: Check for VIDEO_TS or BDMV (DVD/BluRay structures)
             if "VIDEO_TS" in dirs or "BDMV" in dirs:
-                logger.info(f"Rilevata struttura disco in: {root}")
+                logger.info(f"Disc structure detected in: {root}")
                 self.process_item(root, is_folder=True)
                 # Don't traverse deeper into this concert folder
                 dirs[:] = [d for d in dirs if d not in ["VIDEO_TS", "BDMV"]]
@@ -116,8 +112,8 @@ class ScanningWorker(QThread):
                         part_num = int(match_part.group(2))
                         if part_num > 1:
                             logger.debug(
-                                f"Saltato file multi-parte secondario: {file}")
-                            continue
+                                f"Skipped secondary multi-part file: {file}")
+                        continue
 
                     # Ignore small files
                     file_path = os.path.join(root, file)
@@ -126,9 +122,9 @@ class ScanningWorker(QThread):
                         self.process_item(file_path, is_folder=False)
                     else:
                         logger.debug(
-                            f"Saltato file piccolo ({file_size} bytes): {file_path}")
+                            f"Skipped small file ({file_size} bytes): {file_path}")
 
-        logger.info(f"Scansione completata. Analizzati {self.root_folder}...")
+        logger.info(f"Scan completed. Analyzed {self.root_folder}...")
         self.finished.emit()
 
     def process_item(self, path, is_folder):
@@ -694,7 +690,7 @@ class ConcertManagerApp(QMainWindow):
                 if checkbox:
                     checkbox.setChecked(False)
 
-            print(f"✅ Metadati e UI aggiornati per: {path}")
+            print(f"✅ Metadata and UI updated for: {path}")
 
     def on_selection_changed(self):
         """Handle table selection change to update details panel."""
@@ -935,7 +931,7 @@ class ConcertManagerApp(QMainWindow):
             # 1. Estrai MediaInfo
             info = extract_mediainfo(full_path)
             if not info:
-                logger.warning(f"MediaInfo fallito per: {full_path}")
+                logger.warning(f"MediaInfo failed for: {full_path}")
                 continue
 
             # 2. Determina path NFO
@@ -1204,10 +1200,10 @@ class ConcertManagerApp(QMainWindow):
                     f.write(xml_str)
 
                 count += 1
-                logger.info(f"UTENTE: Aggiornato MediaInfo per {clean_name}")
+                logger.info(f"USER: Updated MediaInfo for {clean_name}")
 
             except Exception as e:
-                logger.error(f"Errore aggiornamento NFO {nfo_path}: {e}")
+                logger.error(f"Error updating NFO {nfo_path}: {e}")
 
         QMessageBox.information(
             self, TranslationManager.tr("Completed"), TranslationManager.tr("Updated {count} NFOs with MediaInfo data.").format(count=count))

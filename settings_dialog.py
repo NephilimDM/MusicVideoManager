@@ -121,7 +121,7 @@ class SettingsDialog(QDialog):
         selected_lang = self.combo_language.currentData()
         ConfigManager.set("language", selected_lang)
 
-        logger.info("UTENTE: Configurazione e API Key aggiornate manualmente.")
+        logger.info("USER: Configuration and API Keys updated manually.")
         self.accept()
 
     def browse_folder(self):

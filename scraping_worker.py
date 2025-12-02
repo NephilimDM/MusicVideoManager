@@ -302,15 +302,15 @@ class ScrapingWorker(QThread):
     def scrape_metadata(self, artist, title, date=None):
         """Orchestrate scraping with Supreme Waterfall strategy."""
 
-        logger.info(f"--- INIZIO SCRAPING: '{artist} - {title}' ---")
+        logger.info(f"--- START SCRAPING: '{artist} - {title}' ---")
         self.progress_log.emit(f"Scraping '{title}'...")
 
         # --- PASSO 1: TMDB SEARCH ---
-        logger.info("[STEP 1] Cerco su TMDB...")
+        logger.info("[STEP 1] Searching on TMDB...")
         if self.tmdb_key:
             tmdb_data = self.fetch_tmdb_data(artist, title)
             if tmdb_data:
-                logger.info("✅ SUCCESSO TMDB: Trovato!")
+                logger.info("✅ SUCCESS TMDB: Found!")
                 self.progress_log.emit("Found on TMDB!")
 
                 # Arricchimento Setlist
@@ -330,12 +330,12 @@ class ScrapingWorker(QThread):
                 if setlist_text:
                     tmdb_data["plot"] += f"\n\n[SETLIST]\n{setlist_text}"
 
-                logger.info("✅ SCRAPING COMPLETATO (TMDB)")
+                logger.info("✅ SCRAPING COMPLETED (TMDB)")
                 return tmdb_data
             else:
-                logger.info("❌ FAIL TMDB: Nessun risultato o mismatch.")
+                logger.info("❌ FAIL TMDB: No result or mismatch.")
         else:
-            logger.info("⚠️ SKIP TMDB: API Key mancante.")
+            logger.info("⚠️ SKIP TMDB: Missing API Key.")
 
         # --- PASSO 2: MUSIC VIDEO FALLBACK ---
         found_metadata = False
@@ -346,10 +346,10 @@ class ScrapingWorker(QThread):
         discogs_data = None
 
         # 2.1 TADB
-        logger.info("[STEP 2] Cerco su TheAudioDB...")
+        logger.info("[STEP 2] Searching on TheAudioDB...")
         tadb_data = self.fetch_theaudiodb_data(artist, title)
         if tadb_data:
-            logger.info("✅ SUCCESSO TheAudioDB: Trovato!")
+            logger.info("✅ SUCCESS TheAudioDB: Found!")
             self.progress_log.emit("Found on TheAudioDB")
             found_metadata = True
             nfo_data.update(tadb_data)
@@ -357,28 +357,28 @@ class ScrapingWorker(QThread):
             fanart_url = tadb_data.get("fanart_url")
             mbid = tadb_data.get("mbid")
         else:
-            logger.info("❌ FAIL TheAudioDB: Nessun risultato.")
+            logger.info("❌ FAIL TheAudioDB: No result.")
 
         # 2.2 Discogs
         if not found_metadata:
-            logger.info("[STEP 3] Cerco su Discogs...")
+            logger.info("[STEP 3] Searching on Discogs...")
             if self.discogs_key and self.discogs_secret:
                 discogs_data = self.fetch_discogs_data(artist, title)
                 if discogs_data:
-                    logger.info("✅ SUCCESSO Discogs: Trovato!")
+                    logger.info("✅ SUCCESS Discogs: Found!")
                     self.progress_log.emit("Found on Discogs")
                     found_metadata = True
                     nfo_data.update(discogs_data)
                     poster_url = discogs_data.get("poster_url")
                 else:
-                    logger.info("❌ FAIL Discogs: Nessun risultato.")
+                    logger.info("❌ FAIL Discogs: No result.")
             else:
-                logger.info("⚠️ SKIP Discogs: API Key mancante.")
+                logger.info("⚠️ SKIP Discogs: Missing API Key.")
         else:
-            logger.info("⚠️ SKIP Discogs: Metadati già trovati su TADB.")
+            logger.info("⚠️ SKIP Discogs: Metadata already found on TADB.")
 
         # 2.3 Fanart.tv
-        logger.info("[STEP 4] Arricchimento Fanart.tv...")
+        logger.info("[STEP 4] Enriching from Fanart.tv...")
         if found_metadata and (not poster_url or not fanart_url):
             if mbid and self.fanart_api_key:
                 fanart_data = self.fetch_fanart_data(mbid)
@@ -387,39 +387,39 @@ class ScrapingWorker(QThread):
                         poster_url = fanart_data.get("poster_url")
                     if not fanart_url:
                         fanart_url = fanart_data.get("fanart_url")
-                    logger.info("✅ Fanart.tv: Immagini aggiunte.")
+                    logger.info("✅ Fanart.tv: Images added.")
                 else:
-                    logger.info("❌ Fanart.tv: Nessuna immagine trovata.")
+                    logger.info("❌ Fanart.tv: No images found.")
             else:
-                logger.info("⚠️ SKIP Fanart.tv: MBID o API Key mancante.")
+                logger.info("⚠️ SKIP Fanart.tv: Missing MBID or API Key.")
         else:
             logger.info(
-                "⚠️ SKIP Fanart.tv: Immagini già presenti o metadati mancanti.")
+                "⚠️ SKIP Fanart.tv: Images already present or missing metadata.")
 
         # 2.4 Discogs Image Recovery
-        logger.info("[STEP 5] Recupero Immagini Discogs...")
+        logger.info("[STEP 5] Recovering Discogs Images...")
         if found_metadata and not poster_url:
             if not discogs_data and self.discogs_key:
                 discogs_data = self.fetch_discogs_data(artist, title)
 
             if discogs_data and discogs_data.get("poster_url"):
                 poster_url = discogs_data.get("poster_url")
-                logger.info("✅ Discogs Images: Poster recuperato.")
+                logger.info("✅ Discogs Images: Poster recovered.")
             else:
-                logger.info("❌ Discogs Images: Nessun poster trovato.")
+                logger.info("❌ Discogs Images: No poster found.")
         else:
             logger.info(
-                "⚠️ SKIP Discogs Images: Poster già presente o metadati mancanti.")
+                "⚠️ SKIP Discogs Images: Poster already present or missing metadata.")
 
         if found_metadata:
             nfo_data["poster_url"] = poster_url
             nfo_data["fanart_url"] = fanart_url
-            logger.info("✅ SCRAPING COMPLETATO (Fallback)")
+            logger.info("✅ SCRAPING COMPLETED (Fallback)")
             return nfo_data
         else:
             self.progress_log.emit(f"No data found for {artist} - {title}")
             logger.warning(
-                "⛔ SCRAPING FALLITO: Nessun dato trovato in nessuna fonte.")
+                "⛔ SCRAPING FAILED: No data found in any source.")
             return None
 
     def _clean_discogs_title(self, title, artist):
@@ -669,39 +669,39 @@ class ScrapingWorker(QThread):
         if not artist or not title:
             return enriched
 
-        logger.info(f"--- AVVIO DEEP ENRICHMENT per: {artist} - {title} ---")
+        logger.info(f"--- START DEEP ENRICHMENT for: {artist} - {title} ---")
 
         # 1. DISCOGS ENRICHMENT (Fallback per Anno/Album/Poster)
         if not enriched.get("year") or not enriched.get("album") or not enriched.get("poster_url"):
             logger.info(
-                "Dati incompleti (Anno/Album/Poster), interrogo Discogs...")
+                "Incomplete data (Year/Album/Poster), querying Discogs...")
             if self.discogs_key and self.discogs_secret:
                 discogs_data = self.fetch_discogs_data(artist, title)
                 if discogs_data:
                     if not enriched.get("year") and discogs_data.get("year"):
                         enriched["year"] = discogs_data["year"]
                         logger.info(
-                            f"Anno recuperato da Discogs: {enriched['year']}")
+                            f"Year recovered from Discogs: {enriched['year']}")
 
                     if not enriched.get("album") and discogs_data.get("title"):
                         # Usa il titolo della release come album
                         enriched["album"] = discogs_data["title"]
                         logger.info(
-                            f"Album recuperato da Discogs: {enriched['album']}")
+                            f"Album recovered from Discogs: {enriched['album']}")
 
                     if not enriched.get("poster_url") and discogs_data.get("poster_url"):
                         enriched["poster_url"] = discogs_data["poster_url"]
-                        logger.info("Poster recuperato da Discogs.")
+                        logger.info("Poster recovered from Discogs.")
                 else:
-                    logger.info("Discogs: Nessun dato trovato.")
+                    logger.info("Discogs: No data found.")
             else:
-                logger.info("⚠️ SKIP Discogs: API Key mancante.")
+                logger.info("⚠️ SKIP Discogs: Missing API Key.")
         else:
-            logger.debug("Dati tecnici completi, salto Discogs.")
+            logger.debug("Technical data complete, skipping Discogs.")
 
         # 2. WIKIPEDIA (Se plot vuoto o corto)
         if WIKIPEDIA_AVAILABLE and (not enriched.get("plot") or len(enriched.get("plot", "")) < 50):
-            logger.info("Trama assente o breve, interrogo Wikipedia...")
+            logger.info("Plot missing or short, querying Wikipedia...")
             try:
                 wiki = wikipediaapi.Wikipedia(
                     language='it',
@@ -717,18 +717,18 @@ class ScrapingWorker(QThread):
                 found_plot = False
                 for q in queries:
                     logger.debug(
-                        f"🔍 WIKI TEST: Cerco pagina esatta con titolo: '{q}'")
+                        f"🔍 WIKI TEST: Searching exact page with title: '{q}'")
                     page = wiki.page(q)
                     if page.exists():
                         logger.info(
-                            f"✅ WIKI TROVATO: Pagina '{page.title}' esiste (ID: {page.pageid}).")
+                            f"✅ WIKI FOUND: Page '{page.title}' exists (ID: {page.pageid}).")
                         preview = page.summary[:100].replace('\n', ' ')
                         logger.debug(f"📄 WIKI PREVIEW: {preview}...")
 
                         # Check Disambiguation
                         if "may refer to" in page.summary.lower() or "può riferirsi a" in page.summary.lower():
                             logger.warning(
-                                f"⚠️ WIKI DISAMBIGUAZIONE: '{q}' è una pagina di disambiguazione. Salto.")
+                                f"⚠️ WIKI DISAMBIGUATION: '{q}' is a disambiguation page. Skipping.")
                             continue
 
                         summary = page.summary
@@ -744,17 +744,18 @@ class ScrapingWorker(QThread):
                             break
                         else:
                             logger.warning(
-                                f"⚠️ WIKI CONTENT VALIDATION FAILED: Keywords mancanti nel summary per '{q}'.")
+                                f"⚠️ WIKI CONTENT VALIDATION FAILED: Missing keywords in summary for '{q}'.")
                     else:
-                        logger.debug(f"❌ WIKI FAIL: Pagina '{q}' non esiste.")
+                        logger.debug(
+                            f"❌ WIKI FAIL: Page '{q}' does not exist.")
                 if not found_plot:
-                    logger.info("Wikipedia: Nessuna trama trovata.")
+                    logger.info("Wikipedia: No plot found.")
 
             except Exception as e:
                 self.progress_log.emit(f"Wikipedia error: {e}")
                 logger.error(f"Wikipedia error: {e}")
         else:
-            logger.debug("Trama già presente, salto Wikipedia.")
+            logger.debug("Plot already present, skipping Wikipedia.")
 
         # 3. SETLIST.FM (Se manca scaletta e siamo in contesto concerto)
         is_concert = enriched.get("is_concert", True)
@@ -791,7 +792,7 @@ class ScrapingWorker(QThread):
                     self.progress_log.emit("Setlist.fm data added.")
 
         # 4. FANART.TV (Se mancano immagini)
-        logger.info("Controllo immagini su Fanart.tv...")
+        logger.info("Checking images on Fanart.tv...")
         if not enriched.get("poster_url") or not enriched.get("fanart_url"):
             mbid = enriched.get("mbid")
             if mbid:
@@ -804,9 +805,9 @@ class ScrapingWorker(QThread):
                     logger.info("Fanart.tv images added.")
                     self.progress_log.emit("Fanart.tv images added.")
             else:
-                logger.info("MBID mancante, salto Fanart.tv.")
+                logger.info("Missing MBID, skipping Fanart.tv.")
 
-        logger.info("--- DEEP ENRICHMENT COMPLETATO ---")
+        logger.info("--- DEEP ENRICHMENT COMPLETED ---")
         return enriched
 
     def _execute_setlist_request(self, url, headers, params):

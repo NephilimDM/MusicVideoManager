@@ -314,7 +314,7 @@ class ConcertEditorDialog(QDialog):
                     self.metadata_fields["plot"].setPlainText(
                         root.findtext("plot", ""))
 
-                    print(f"✅ NFO caricato da: {nfo_path}")
+                    print(f"✅ NFO loaded from: {nfo_path}")
                     return
                 except (ET.ParseError, IOError) as e:
                     print(f"ERROR parsing NFO {nfo_path}: {e}")
@@ -366,7 +366,7 @@ class ConcertEditorDialog(QDialog):
                 if not pixmap.isNull():
                     self.poster_pixmap = pixmap
                     self.update_poster_preview()
-                    print(f"✅ Poster caricato: {poster_path}")
+                    print(f"✅ Poster loaded: {poster_path}")
                     break
 
         # 3. Carica Fanart
@@ -377,11 +377,11 @@ class ConcertEditorDialog(QDialog):
                 if not pixmap.isNull():
                     self.fanart_pixmap = pixmap
                     self.update_fanart_preview()
-                    print(f"✅ Fanart esistente caricata: {fanart_path}")
+                    print(f"✅ Existing fanart loaded: {fanart_path}")
                     return  # Stop here
 
         # No fanart exists, show placeholder
-        print("ℹ️ Nessuna fanart esistente trovata")
+        print("ℹ️ No existing fanart found")
 
     def find_video_source(self, path):
         """
@@ -395,7 +395,7 @@ class ConcertEditorDialog(QDialog):
         if not os.path.isdir(path):
             return None
 
-        print(f"DEBUG: Scansione cartella per video source: {path}")
+        print(f"DEBUG: Scanning folder for video source: {path}")
 
         candidates = []
         valid_extensions = ('.vob', '.m2ts', '.ts', '.mkv', '.mp4', '.avi')
@@ -413,13 +413,13 @@ class ConcertEditorDialog(QDialog):
                         continue
 
         if not candidates:
-            print("WARNING: Nessun file video valido trovato nella struttura disco.")
+            print("WARNING: No valid video file found in disc structure.")
             return None
 
         # Sort by size descending and take the largest
         candidates.sort(key=lambda x: x[1], reverse=True)
         best_candidate = candidates[0][0]
-        print(f"DEBUG: Video source selezionato: {best_candidate}")
+        print(f"DEBUG: Video source selected: {best_candidate}")
         return best_candidate
 
     def load_video(self):
@@ -441,7 +441,7 @@ class ConcertEditorDialog(QDialog):
             self.cap = cv2.VideoCapture(
                 video_source)  # pylint: disable=no-member
             if not self.cap.isOpened():
-                print(f"ERROR: Impossibile aprire {video_source}")
+                print(f"ERROR: Cannot open {video_source}")
                 self.lbl_video_preview.setText(
                     TranslationManager.tr("Error opening video"))
                 return
@@ -454,9 +454,9 @@ class ConcertEditorDialog(QDialog):
                 self.video_slider.setMaximum(total_frames - 1)
                 self.video_slider.setValue(0)
                 self.video_slider.setEnabled(True)
-                print(f"✅ Video caricato: {total_frames} frames")
+                print(f"✅ Video loaded: {total_frames} frames")
             else:
-                print("WARNING: Video aperto ma 0 frames rilevati.")
+                print("WARNING: Video opened but 0 frames detected.")
                 self.video_slider.setEnabled(False)
                 self.lbl_video_preview.setText(
                     TranslationManager.tr("Video without frames"))
@@ -525,7 +525,7 @@ class ConcertEditorDialog(QDialog):
     def set_current_frame_as_fanart(self):
         """Copy current video frame to fanart preview."""
         if self.current_frame is None:
-            print("ERROR: Nessun frame video disponibile")
+            print("ERROR: No video frame available")
             return
 
         # Convert OpenCV frame to QPixmap
@@ -545,9 +545,9 @@ class ConcertEditorDialog(QDialog):
         self.fanart_pixmap = pixmap
         self.fanart_changed = True
         self.update_fanart_preview()
-        print("✅ Frame marcato come nuova Fanart")
+        print("✅ Frame marked as new Fanart")
         logger.info(
-            f"UTENTE: Creato snapshot manuale per '{self.clean_name}'.")
+            f"USER: Manual snapshot created for '{self.clean_name}'.")
 
     def load_poster_from_file(self):
         """Load poster from file dialog."""
@@ -560,7 +560,7 @@ class ConcertEditorDialog(QDialog):
                 self.poster_pixmap = pixmap
                 self.poster_changed = True
                 self.update_poster_preview()
-                print(f"✅ Poster caricato da: {file_path}")
+                print(f"✅ Poster loaded from: {file_path}")
 
     def load_poster_from_url(self):
         """Load poster from URL."""
@@ -578,7 +578,7 @@ class ConcertEditorDialog(QDialog):
                     self.poster_pixmap = pixmap
                     self.poster_changed = True
                     self.update_poster_preview()
-                    print("✅ Poster caricato da URL")
+                    print("✅ Poster loaded from URL")
                 else:
                     print(f"ERROR: Status {response.status_code}")
             except requests.RequestException as e:
@@ -593,9 +593,9 @@ class ConcertEditorDialog(QDialog):
             self.poster_pixmap = pixmap
             self.poster_changed = True
             self.update_poster_preview()
-            print("✅ Poster incollato da clipboard")
+            print("✅ Poster pasted from clipboard")
         else:
-            print("ERROR: Nessuna immagine nel clipboard")
+            print("ERROR: No image in clipboard")
 
     def save_nfo(self):
         """Save NFO data to file."""
@@ -622,7 +622,7 @@ class ConcertEditorDialog(QDialog):
         try:
             with open(nfo_path, "w", encoding="utf-8") as f:
                 f.write(xml_str)
-            logger.info(f"💾 NFO salvato: {nfo_path}")
+            logger.info(f"💾 NFO saved: {nfo_path}")
             return True
         except IOError as e:
             logger.error(f"ERROR saving NFO: {e}")
@@ -636,7 +636,7 @@ class ConcertEditorDialog(QDialog):
                 self.base_folder, f"{self.clean_name}-poster.jpg")
             try:
                 self.poster_pixmap.save(poster_path, "JPG")
-                logger.info(f"💾 Poster salvato: {poster_path}")
+                logger.info(f"💾 Poster saved: {poster_path}")
             except Exception as e:
                 logger.error(f"ERROR saving poster {poster_path}: {e}")
 
@@ -646,7 +646,7 @@ class ConcertEditorDialog(QDialog):
                 self.base_folder, f"{self.clean_name}-fanart.jpg")
             try:
                 self.fanart_pixmap.save(fanart_path, "JPG")
-                logger.info(f"💾 Fanart salvata: {fanart_path}")
+                logger.info(f"💾 Fanart saved: {fanart_path}")
             except Exception as e:
                 logger.error(f"ERROR saving fanart {fanart_path}: {e}")
 
@@ -655,7 +655,7 @@ class ConcertEditorDialog(QDialog):
         if self.save_nfo():
             self.save_images()
             logger.info(
-                f"UTENTE: Salvataggio manuale effettuato per '{self.clean_name}'.")
+                f"USER: Manual save performed for '{self.clean_name}'.")
             self.accept()
         else:
             QMessageBox.critical(self, TranslationManager.tr("Save Error"),
@@ -672,7 +672,7 @@ class ConcertEditorDialog(QDialog):
             if not data:
                 return
 
-            logger.info(f"DEBUG: Dati ricevuti da Manual Search: {data}")
+            logger.info(f"DEBUG: Data received from Manual Search: {data}")
 
             # Update Fields
             self.metadata_fields["artist"].setText(data.get("artist", ""))
@@ -705,18 +705,18 @@ class ConcertEditorDialog(QDialog):
                         self.poster_pixmap = pixmap
                         self.poster_changed = True
                         self.update_poster_preview()
-                        logger.info("✅ Nuovo Poster scaricato (in memoria)")
+                        logger.info("✅ New Poster downloaded (in memory)")
                     else:
                         self.fanart_pixmap = pixmap
                         self.fanart_changed = True
                         self.update_fanart_preview()
-                        logger.info("✅ Nuova Fanart scaricata (in memoria)")
+                        logger.info("✅ New Fanart downloaded (in memory)")
             else:
                 logger.error(
-                    f"❌ Errore download immagine: Dati vuoti o errore di rete per {url}")
+                    f"❌ Image download error: Empty data or network error for {url}")
 
         except Exception as e:
-            logger.error(f"❌ Errore loading temp image: {e}")
+            logger.error(f"❌ Error loading temp image: {e}")
 
     def search_setlist(self):
         """Search setlist on Setlist.fm using Smart Date logic."""
@@ -810,9 +810,9 @@ class ConcertEditorDialog(QDialog):
                 if songs_text:
                     # Create Header based on mode
                     if search_mode == "date":
-                        header = f"[SCALETTA DEL {formatted_date}]"
+                        header = f"[SETLIST OF {formatted_date}]"
                     else:
-                        header = f"[SCALETTA INDICATIVA TOUR {search_year}]"
+                        header = f"[INDICATIVE SETLIST TOUR {search_year}]"
 
                     setlist_text = f"{header}\n{tour_name}{songs_text}"
 
@@ -828,15 +828,15 @@ class ConcertEditorDialog(QDialog):
                     self.metadata_fields["plot"].setPlainText(new_plot)
 
                     QMessageBox.information(
-                        self, "Successo", "Setlist trovata e aggiunta alla trama!")
+                        self, "Success", "Setlist found and added to plot!")
                 else:
                     QMessageBox.information(
-                        self, "Info", "Setlist trovata ma vuota.")
+                        self, "Info", "Setlist found but empty.")
 
         except requests.RequestException as e:
             QApplication.restoreOverrideCursor()
-            QMessageBox.critical(self, "Errore API",
-                                 f"Errore durante la ricerca: {e}")
+            QMessageBox.critical(self, "API Error",
+                                 f"Error during search: {e}")
 
     def closeEvent(self, event):  # pylint: disable=invalid-name
         """Release resources on close."""
