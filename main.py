@@ -1,6 +1,6 @@
 """
-Concert Manager AI - Main Application
-Manages concert NFO files and metadata.
+Music Video Manager - Main Application
+Manages mmusic videos NFO files and metadata.
 """
 import sys
 import os
