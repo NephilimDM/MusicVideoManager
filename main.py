@@ -289,7 +289,8 @@ class ScanningWorker(QThread):
 class ConcertManagerApp(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Music Video Manager v1.0")
+        self.setWindowTitle("Music Video Manager v1.2")
+        logger.info("--- APP STARTED: v1.2 ---")
         script_dir = os.path.dirname(os.path.abspath(__file__))
         icon_path = os.path.join(script_dir, "icon.ico")
         self.setWindowIcon(QIcon(icon_path))
@@ -982,8 +983,13 @@ class ConcertManagerApp(QMainWindow):
                     ET.SubElement(v_tag, "height").text = str(
                         vid.get("height", ""))
                     if vid.get("duration"):
-                        ET.SubElement(v_tag, "durationinseconds").text = str(
-                            int(vid["duration"] / 1000))
+                        try:
+                            ET.SubElement(v_tag, "durationinseconds").text = str(
+                                int(float(vid["duration"]) / 1000))
+                        except (ValueError, TypeError):
+                            logger.warning(
+                                f"Invalid duration format for {clean_name}: {vid.get('duration')}")
+                            pass
 
                 # Audio
                 aud = info.get("audio", {})
@@ -1008,7 +1014,8 @@ class ConcertManagerApp(QMainWindow):
                 logger.info(f"UTENTE: Aggiornato MediaInfo per {clean_name}")
 
             except Exception as e:
-                logger.error(f"Errore aggiornamento NFO {nfo_path}: {e}")
+                logger.error(
+                    f"CRITICAL_ERROR_NFO_UPDATE {nfo_path}: {e}", exc_info=True)
 
         QMessageBox.information(
             self, TranslationManager.tr("Completed"), TranslationManager.tr("Updated {count} NFOs with MediaInfo data.").format(count=count))
@@ -1101,112 +1108,6 @@ class ConcertManagerApp(QMainWindow):
         self.table.setEnabled(True)
         self.table.setSortingEnabled(True)
         logging.info("Scraping batch completed.")
-
-    def update_selected_mediainfo(self):
-        """Update MediaInfo in NFO for selected rows."""
-        selected_rows = []
-        for row in range(self.table.rowCount()):
-            chk_widget = self.table.cellWidget(row, 0)
-            if chk_widget:
-                checkbox = chk_widget.findChild(QCheckBox)
-                if checkbox and checkbox.isChecked():
-                    selected_rows.append(row)
-
-        if not selected_rows:
-            QMessageBox.warning(self, "Attenzione",
-                                "Nessun elemento selezionato.")
-            return
-
-        count = 0
-        for row in selected_rows:
-            full_path = self.table.item(row, 1).data(Qt.ItemDataRole.UserRole)
-            if not full_path or not os.path.exists(full_path):
-                continue
-
-            # 1. Estrai MediaInfo
-            info = extract_mediainfo(full_path)
-            if not info:
-                logger.warning(f"MediaInfo fallito per: {full_path}")
-                continue
-
-            # 2. Determina path NFO
-            base_folder = os.path.dirname(full_path)
-            clean_name = get_kodi_filename(os.path.basename(full_path))
-            nfo_path = os.path.join(base_folder, f"{clean_name}.nfo")
-
-            # Fallback per NFO esistenti con nomi diversi
-            if not os.path.exists(nfo_path):
-                candidates = [
-                    os.path.join(base_folder, "musicvideo.nfo"),
-                    os.path.join(base_folder, "movie.nfo"),
-                    os.path.join(
-                        base_folder, f"{os.path.splitext(os.path.basename(full_path))[0]}.nfo")
-                ]
-                for c in candidates:
-                    if os.path.exists(c):
-                        nfo_path = c
-                        break
-
-            # 3. Aggiorna XML
-            try:
-                if os.path.exists(nfo_path):
-                    tree = ET.parse(nfo_path)
-                    root = tree.getroot()
-                else:
-                    root = ET.Element("musicvideo")
-                    tree = ET.ElementTree(root)
-
-                # Rimuovi vecchio fileinfo
-                for fileinfo in root.findall("fileinfo"):
-                    root.remove(fileinfo)
-
-                # Crea nuovo fileinfo
-                fi = ET.SubElement(root, "fileinfo")
-                sd = ET.SubElement(fi, "streamdetails")
-
-                # Video
-                vid = info.get("video", {})
-                if vid:
-                    v_tag = ET.SubElement(sd, "video")
-                    ET.SubElement(v_tag, "codec").text = str(
-                        vid.get("codec", ""))
-                    ET.SubElement(v_tag, "aspect").text = str(
-                        vid.get("aspect", ""))
-                    ET.SubElement(v_tag, "width").text = str(
-                        vid.get("width", ""))
-                    ET.SubElement(v_tag, "height").text = str(
-                        vid.get("height", ""))
-                    if vid.get("duration"):
-                        ET.SubElement(v_tag, "durationinseconds").text = str(
-                            int(vid["duration"] / 1000))
-
-                # Audio
-                aud = info.get("audio", {})
-                if aud:
-                    a_tag = ET.SubElement(sd, "audio")
-                    ET.SubElement(a_tag, "codec").text = str(
-                        aud.get("codec", ""))
-                    ET.SubElement(a_tag, "channels").text = str(
-                        aud.get("channels", ""))
-
-                # Salva con pretty print
-                xml_str = minidom.parseString(ET.tostring(
-                    root, encoding='utf-8')).toprettyxml(indent="    ")
-                # Rimuovi righe vuote extra
-                xml_str = "\n".join(
-                    [line for line in xml_str.splitlines() if line.strip()])
-
-                with open(nfo_path, "w", encoding="utf-8") as f:
-                    f.write(xml_str)
-
-                count += 1
-                logger.info(f"USER: Updated MediaInfo for {clean_name}")
-
-            except Exception as e:
-                logger.error(f"Error updating NFO {nfo_path}: {e}")
-
-        QMessageBox.information(
-            self, TranslationManager.tr("Completed"), TranslationManager.tr("Updated {count} NFOs with MediaInfo data.").format(count=count))
 
 
 if __name__ == "__main__":

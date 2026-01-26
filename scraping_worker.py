@@ -259,7 +259,11 @@ class ScrapingWorker(QThread):
                     details["width"] = track.width
                     details["height"] = track.height
                     if track.duration:
-                        details["duration"] = int(int(track.duration) / 1000)
+                        try:
+                            details["duration"] = int(
+                                float(track.duration) / 1000)
+                        except (ValueError, TypeError):
+                            details["duration"] = 0
                     details["video_codec"] = track.format
 
                     if getattr(track, 'hdr_format', None):
